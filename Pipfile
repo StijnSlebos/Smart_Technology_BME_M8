@@ -9,6 +9,7 @@ pygame = "*"
 pyopengl = "*"
 matplotlib = "*"
 numpy = "*"
+serial = "*"
 
 [dev-packages]
 

@@ -1,5 +1,6 @@
 import bluetooth  # import bluetooth libary for communication with the esp32
 from numpy import nanmean  # import numpy to calculate mean for moving average
+import csv
 
 print("Scanning...")
 devices = bluetooth.discover_devices(lookup_names=True)  # searches for bluetooth devices
@@ -10,7 +11,7 @@ sensitivity_acc = 2048
 sensitivity_gyro = 16.4
 
 for device in devices:
-    if device[1] == 'WirelessIMU-A' or device[1] == 'WirelessIMU-B':  # searches for a device called: WirelessIMUX. in which X is the number on your casing
+    if device[1] == 'WirelessIMU-68FE' or device[1] == 'WirelessIMU-B':  # searches for a device called: WirelessIMUX. in which X is the number on your casing
         wirelessIMUs.append(device)
 
 print("Found these devices: ", wirelessIMUs)
@@ -56,18 +57,22 @@ def real_numbers(input, k):  # real numbers function transfers into actual value
         converted = input / sensitivity_gyro
     return converted  # returns converted value
 
+cycles = 0
+with open("dump.csv", "w") as file:
+    writer = csv.writer(file)
 
-while True:
-
-    for sensor in sensors:
-        inbytes = b''
-        inbyte = [inbytes] * 6
-        while len(inbytes) < 12:
-            inbytes += sensor.recv(12 - len(inbytes))  # Collects data from sensor in bytes
-        for z in range(0, 6):
-            inbyte[z] += inbytes[z * 2:z * 2 + 2]
-            inbyte[z] = int.from_bytes(inbyte[z], "big", signed="True")  # converts from bytes to int
-            output[z] = moving_average(inbyte[z], z)  # Calls moving average function
-            output_real[z] = real_numbers(output[z], z)  # calls real_numbers function
-        sensor.send('a')
-        print(sensor, output_real)
+    while cycles<1000:
+        cycles += 1
+        for sensor in sensors:
+            inbytes = b''
+            inbyte = [inbytes] * 6
+            while len(inbytes) < 12:
+                inbytes += sensor.recv(12 - len(inbytes))  # Collects data from sensor in bytes
+            for z in range(0, 6):
+                inbyte[z] += inbytes[z * 2:z * 2 + 2]
+                inbyte[z] = int.from_bytes(inbyte[z], "big", signed="True")  # converts from bytes to int
+                output[z] = moving_average(inbyte[z], z)  # Calls moving average function
+                output_real[z] = real_numbers(output[z], z)  # calls real_numbers function
+            sensor.send('a')
+            writer.writerow([sensor, output_real])
+            print(sensor, output_real)
