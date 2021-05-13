@@ -1,0 +1,35 @@
+Index: python_bluetooth_client/connect.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>import bluetooth\r\nimport time\r\n\r\ndevices = bluetooth.discover_devices(lookup_names=True)\r\nprint(devices)\r\n\r\nwirelessIMUs = []\r\nfor device in devices:\r\n    if device[1] == 'WirelessIMU':\r\n        wirelessIMUs.append(device)\r\n\r\nprint(wirelessIMUs)\r\n\r\nIMUservices = []\r\n\r\nfor addr, name in wirelessIMUs:\r\n    print(addr)\r\n    services = bluetooth.find_service(address=addr)\r\n    for serv in services:\r\n        if serv['name'] == b'ESP32SPP\\x00':\r\n            IMUservices.append(serv)\r\n\r\nsensors = []\r\n\r\nfor IMU in IMUservices:\r\n    sensor = bluetooth.BluetoothSocket(bluetooth.RFCOMM)\r\n    sensor.connect((IMU['host'], IMU['port']))\r\n    sensor.setblocking(0)\r\n    sensor.settimeout(1000)\r\n    sensors.append(sensor)\r\n\r\nstart = time.time()\r\n\r\noutput = [None] * 6\r\n\r\nfor sensor in sensors:\r\n    sensor.send('a')\r\n\r\nfor i in range(1000):\r\n    for sensor in sensors:\r\n        inbytes = b''\r\n        while len(inbytes)<12:\r\n            inbytes+=sensor.recv(12-len(inbytes))\r\n        sensor.send('a')\r\n        #input = sensor.recv(12)\r\n        for j in range(0, 12, 2):\r\n            output[int(j/2)] = inbytes[j] << 8 | inbytes[j + 1]\r\n\r\n\r\nend = time.time()\r\navg = (end - start) / 1000\r\nf = 1 / avg\r\nprint('frequency: %f' % f)\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- python_bluetooth_client/connect.py	(revision c6fc1c7ac6036e54a38ba9425a0337bfc8941cbb)
++++ python_bluetooth_client/connect.py	(date 1618322622512)
+@@ -6,7 +6,7 @@
+ 
+ wirelessIMUs = []
+ for device in devices:
+-    if device[1] == 'WirelessIMU':
++    if device[1] == 'WirelessIMU4':
+         wirelessIMUs.append(device)
+ 
+ print(wirelessIMUs)
+@@ -36,7 +36,7 @@
+ for sensor in sensors:
+     sensor.send('a')
+ 
+-for i in range(1000):
++while True:
+     for sensor in sensors:
+         inbytes = b''
+         while len(inbytes)<12:
+@@ -45,6 +45,7 @@
+         #input = sensor.recv(12)
+         for j in range(0, 12, 2):
+             output[int(j/2)] = inbytes[j] << 8 | inbytes[j + 1]
++            print(output)
+ 
+ 
+ end = time.time()
