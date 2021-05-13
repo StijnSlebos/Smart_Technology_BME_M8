@@ -4,6 +4,7 @@
 // By Arduino User JohnChi
 // August 17, 2014
 // Public Domain
+
 #include<Wire.h>
 #include<BluetoothSerial.h>
 #include "Esp.h"
@@ -28,9 +29,18 @@
 BluetoothSerial SerialBT;
 
 const int MPU_addr = 0x68; // I2C address of the MPU-6050
+// Connection with BT-[HC-05] device
+//String MACadd = "00:21:13:00:05:6b";
+//uint8_t address[6]  = {0x00, 0x21, 0x13, 0x00, 0x05, 0x6b}; // the address of the HC-05 I found; change this for your device
+//String name = "HC-05";
+//char *pin = "1234";
+//bool connected;
+
 byte output[12];
+byte bluetooth_id;
 
 bool transmitMode;
+
 
 TaskHandle_t readIMU, clientHandler, pairingTask;
 
@@ -70,7 +80,20 @@ void setup() {
 
   //Enable bluetooth
   startBluetoothStack();
-  SerialBT.begin("WirelessIMU-" + getBluetoothAddress());
+  String btAddress = getBluetoothAddress();
+  SerialBT.begin("WirelessIMU-" + btAddress);
+  bluetooth_id = byte(btAddress[0]);
+  //SerialBT.setPin(pin);
+  //connected = SerialBT.connect(address);
+  //connected = SerialBT.connect();
+//  if (connected) {
+//    Serial.println("connected... to " + name + " with bluetooth id: " + char(bluetooth_id));
+//  } else {
+//    while (!SerialBT.connected(10000)) {
+//      Serial.println("Failed to connect. Make sure remote device is available and in range, then restart app.");
+//    }
+//  }
+
   discoverable(false);
 
   //Create repeating tasks
@@ -116,7 +139,8 @@ void readIMUCode( void * parameter) {
         output[i] = Wire.read();
       } else if (i > 7) {
         output[i - 2] = Wire.read();
-      }else{Wire.read();
+      } else {
+        Wire.read();
       }
     }
   }
@@ -127,6 +151,7 @@ void clientHandlerCode ( void * parameters) {
     if (transmitMode) {
       if (SerialBT.available() > 0) {
         SerialBT.read();
+        SerialBT.write(bluetooth_id);
         SerialBT.write(output, 12);
       }
     } else {
@@ -144,12 +169,14 @@ void pairingCode ( void * parameters) {
     if (transmitMode == true) {
       if (digitalRead(PAIR_PIN) == LOW) {
         discoverable(true);
+        //SerialBT.disconnect();
         for (int i = 0; i < (PAIRING_TIME / PAIR_BLINK_INTERVAL); i++) {
           digitalWrite(BLUE_PIN, LOW);
           delay(PAIR_BLINK_INTERVAL / 2);
           digitalWrite(BLUE_PIN, HIGH);
           delay(PAIR_BLINK_INTERVAL / 2);
         }
+        //SerialBT.connect();
         discoverable(false);
       } else {
         digitalWrite(BLUE_PIN, LOW);
@@ -171,7 +198,7 @@ String getBluetoothAddress() {
   String addrString = String();
   for (int i = 0; i < 2; i++) {
     char str[3];
-    sprintf(str, "%02X", (int)address[i+4]);
+    sprintf(str, "%02X", (int)address[i + 4]);
     addrString = String(addrString + str);
   }
   return addrString;
