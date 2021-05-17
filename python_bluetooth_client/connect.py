@@ -1,5 +1,8 @@
 import bluetooth  # import bluetooth libary for communication with the esp32
+
 import numpy as np  # import numpy to calculate mean for moving average
+
+
 
 print("Scanning...")
 devices = bluetooth.discover_devices(lookup_names=True)  # searches for bluetooth devices
@@ -12,8 +15,8 @@ sensitivity_acc = 2048
 sensitivity_gyro = 16.4
 
 for device in devices:
-    if device[1] == 'WirelessIMU-6DE2' or device[
-        1] == 'WirelessIMU-B':  # searches for a device called: WirelessIMUX. in which X is the number on your casing
+    if device[1] == 'WirelessIMU-6DE2' or device[1] == 'WirelessIMU-B':  # searches for a device called: WirelessIMUX. in which X is the number on your casing
+
         wirelessIMUs.append(device)
 
 print("Found these devices: ", wirelessIMUs)
@@ -81,3 +84,4 @@ while True:
         if cycles == 1000:
             np.savetxt("data.csv", csv_list_transpose, delimiter=",", fmt='%s')
             print("adding to csv is done")
+
